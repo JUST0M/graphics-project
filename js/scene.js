@@ -12,8 +12,10 @@ const SLOW_SPEED  = 0.5;
 const CUBE_CLOSENESS_THRESHOLD = 0.03;
 
 const renderer = new THREE.WebGLRenderer();
+renderer.setPixelRatio( window.devicePixelRatio );
 renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
+document.body.style.overflow = 'hidden';
 
 // FLOOR
 
@@ -85,6 +87,7 @@ camera.position.y = -5;
 camera.rotation.order = "YZX";
 camera.lookAt(0, 0, 0);
 
+let mouseLocked = false;
 let moveForward = false;
 let moveBack = false;
 let moveRight = false;
@@ -97,7 +100,7 @@ let movementSpeed = FAST_SPEED;
 let fKeyDown = false;
 let cKeyDown = false;
 let movingCam = true;
-document.onkeydown = function(event) {
+function keyDownCallback(event) {
     const keyCode = event.code;
     if (keyCode == "KeyW") moveForward = true;
     else if (keyCode == "KeyS") moveBack = true;
@@ -121,7 +124,7 @@ document.onkeydown = function(event) {
         fKeyDown = true;
     }
 };
-document.onkeyup = function(event) {
+function keyUpCallback(event) {
     const keyCode = event.code;
     if (keyCode == "KeyW") moveForward = false;
     else if (keyCode == "KeyS") moveBack = false;
@@ -203,35 +206,27 @@ element.requestPointerLock = element.requestPointerLock ||
     element.webkitRequestPointerLock;
 // Ask the browser to lock the pointer
 element.onclick = function() {
-    element.requestPointerLock();
+    if (!mouseLocked) element.requestPointerLock();
 };
-
-// Ask the browser to release the pointer
-document.exitPointerLock = document.exitPointerLock ||
-    document.mozExitPointerLock ||
-    document.webkitExitPointerLock;
-//document.exitPointerLock();
 
 // Hook pointer lock state change events
 document.addEventListener('pointerlockchange', changeCallback, false);
 document.addEventListener('mozpointerlockchange', changeCallback, false);
 document.addEventListener('webkitpointerlockchange', changeCallback, false);
 
-// Hook mouse move events
-document.addEventListener("mousemove", moveCallback, false);
-
 function changeCallback(event) {
-    if (document.pointerLockElement === event.requestedElement ||
-        document.mozPointerLockElement === event.requestedElement ||
-        document.webkitPointerLockElement === event.requestedElement) {
-        // Pointer was just locked
-        // Enable the mousemove listener
-        document.addEventListener("mousemove", moveCallback, false);
-    } else {
+    if (mouseLocked) {
         // Pointer was just unlocked
         // Disable the mousemove listener
+        document.removeEventListener("keydown", keyDownCallback, false);
+        document.removeEventListener("keyup", keyUpCallback, false);
         document.removeEventListener("mousemove", moveCallback, false);
-        this.unlockHook(this.element);
+        mouseLocked = false;
+    } else {
+        document.addEventListener("keydown", keyDownCallback, false);
+        document.addEventListener("keyup", keyUpCallback, false);
+        document.addEventListener("mousemove", moveCallback, false)
+        mouseLocked = true;
     }
 }
 
