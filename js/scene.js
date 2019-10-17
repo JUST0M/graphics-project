@@ -10,6 +10,7 @@ const MAX_XYZ = SAFE_ROOM_AREA / 2;
 const FAST_SPEED = 4;
 const SLOW_SPEED  = 0.5;
 const CUBE_CLOSENESS_THRESHOLD = 0.03;
+const NUM_ROUNDS = 5;
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setPixelRatio( window.devicePixelRatio );
@@ -87,6 +88,9 @@ camera.position.y = -5;
 camera.rotation.order = "YZX";
 camera.lookAt(0, 0, 0);
 
+document.exitPointerLock = document.exitPointerLock    ||
+    document.mozExitPointerLock;
+
 let mouseLocked = false;
 let moveForward = false;
 let moveBack = false;
@@ -100,6 +104,7 @@ let movementSpeed = FAST_SPEED;
 let fKeyDown = false;
 let cKeyDown = false;
 let movingCam = true;
+let round = 1;
 function keyDownCallback(event) {
     const keyCode = event.code;
     if (keyCode == "KeyW") moveForward = true;
@@ -152,6 +157,40 @@ function cubeOnTarget() {
     )
 }
 
+function finish() {
+    // show the finish time
+    const finishTimeElem = document.getElementById("finishTime");
+    finishTimeElem .innerHTML = `COMPLETED IN ${time.toString()}ms\<br\>`;
+    finishTimeElem.style.display = '';
+
+    // Attempt to unlock pointer
+    document.exitPointerLock();
+    // reset timer
+    time = 0;
+    // show score
+
+    // reset variables
+    round = 1;
+    cube.position.x = 0;
+    cube.position.y = 0;
+    cube.position.z = 0;
+
+    camera.position.x = 0;
+    camera.position.y = -5;
+    camera.position.z = 0;
+    camera.lookAt(0, 0, 0);
+
+    objToMove = camera;
+    movementSpeed = FAST_SPEED;
+
+    moveForward = false; moveBack = false;
+    moveRight = false; moveLeft = false;
+    moveUp = false; moveDown = false;
+
+    moveTargetCube();
+}
+
+
 function animate() {
     requestAnimationFrame( animate );
     const delta = clock.getDelta();
@@ -174,7 +213,13 @@ function animate() {
     if (moveUp && objToMove.position.z < SAFE_AREA / 2) objToMove.translateY(moveDistance);
     if (moveDown && objToMove.position.z > -SAFE_AREA / 2) objToMove.translateY(-moveDistance);
      */
-    if (cubeOnTarget()) moveTargetCube();
+    if (cubeOnTarget()) {
+        if (round === NUM_ROUNDS) finish();
+        else {
+            moveTargetCube();
+            round++;
+        }
+    }
 
     if (moveForward) objToMove.translateZ(-moveDistance);
     if (moveBack) objToMove.translateZ(moveDistance);
@@ -222,10 +267,14 @@ function changeCallback(event) {
         document.removeEventListener("keyup", keyUpCallback, false);
         document.removeEventListener("mousemove", moveCallback, false);
         mouseLocked = false;
+        // Show instructions
+        document.getElementById("blocker").style.display = "block";
     } else {
         document.addEventListener("keydown", keyDownCallback, false);
         document.addEventListener("keyup", keyUpCallback, false);
         document.addEventListener("mousemove", moveCallback, false)
+        document.getElementById("blocker").style.display = "none";
+        document.getElementById("finishTime").style.display = 'none';
         mouseLocked = true;
     }
 }
@@ -241,7 +290,12 @@ function moveCallback(event) {
         0;
 }
 
-// lock pointer
-
+let time = 0;
+const timer = setInterval(function() {
+    // Stop timer while paused/not started
+    if (!mouseLocked) return;
+    document.getElementById("timer").innerHTML = time.toString();
+    time++;
+}, 100);
 
 animate();
