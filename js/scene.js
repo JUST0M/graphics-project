@@ -225,8 +225,9 @@ function animate() {
     if (moveBack) objToMove.translateZ(moveDistance);
     if (moveRight) objToMove.translateX(moveDistance);
     if (moveLeft) objToMove.translateX(-moveDistance);
-    if (moveUp) objToMove.translateY(moveDistance);
-    if (moveDown) objToMove.translateY(-moveDistance);
+    // up and down should really just be up and down rather than relative to direction we are looking
+    if (moveUp) objToMove.position.z += moveDistance;
+    if (moveDown) objToMove.position.z -= moveDistance;
 
     // Constrain to box
     objToMove.position.x = Math.max(Math.min(objToMove.position.x, MAX_XYZ), -MAX_XYZ);
